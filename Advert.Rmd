@@ -1,0 +1,678 @@
+---
+title: "Advertisement_Analytics"
+author: "allan mutisya"
+date: "1/8/2021"
+output: html_document
+---
+```{r}
+#  locale workaround
+my_locale <- Sys.getlocale("LC_ALL")
+Sys.setlocale("LC_ALL", my_locale)
+```
+# Advertisement
+
+## 1. Defining the question
+
+### a) Specifying the Question
+Identify which individuals are most likely to click on ads the entrepreneur posts
+
+### b) Defining the Metric for Success
+
+The analysis will be considered a success when interactive visulizations that tell a good story are achieved. An all-round Exploratory data analysis is achieved and a powerful predictive model will be considered a success.
+
+### c) Understanding the context
+
+The role of the analysis is to come up with recomendations which the entrepreneur will use to executed in order to identify the fertile areas to first invest on.
+
+### d) Recording the Experimental Design
+
+1. Defining the research question
+
+2. Data Understanding
+
+3. Data cleaning
+
+4. Exploratory Data Analysis
+
+5. Modelling
+
+6. Evaluation
+
+7. Conclusion
+
+8. Recommendations
+
+### e) Data Relevance
+
+The datasets are large enough to be used for Exploratory Data Analysis, thus promising better outcomes.
+
+### f) Reading the Data
+```{r}
+# loading the dataset
+library(readr)
+df <- read_csv(file = "C:/Users/ALLANOOH/Documents/moringa/advert_analytics/advert.csv")
+
+library(tidyverse)
+
+my_data <- as_tibble(df)
+my_data
+```
+
+
+## 2. Data Understanding
+```{r}
+#checking the culumns
+ls(df)
+```
+```{r}
+# checking the shape of the dataset
+
+my_data
+```
+The dataset has 1000 rows and 10 columns
+
+
+## 3. Data cleaning
+
+```{r}
+# Renaming column names where they have spaces in between.
+names(my_data)[names(my_data) == "Ad Topic Line"] <- "Ad_Topic_Line"
+names(my_data)[names(my_data) == "Clicked on Ad"] <- "Clicked_on_Ad"
+names(my_data)[names(my_data) == "Area Income"] <- "Area_Income"
+names(my_data)[names(my_data) == "Daily Internet Usage"] <- "Daily_Internet_Usage"
+names(my_data)[names(my_data) == "Daily Time Spent on Site"] <- "Daily_Time_Spent_on_Site"
+head(my_data)
+```
+
+```{r}
+# checking for null values
+sum(!complete.cases(my_data))
+```
+There are no missing values in the dataset.
+
+```{r}
+# checking for duplicated values
+sum(duplicated(my_data))
+```
+There are no dupicated values in the dataset.
+
+```{r}
+# Outlier detection for the Age column
+outlier_values <- boxplot.stats(my_data$Age)$out  # outlier values.
+boxplot(my_data$Age, main="Age", boxwex=0.1)
+mtext(paste("Outliers: ", paste(outlier_values, collapse=", ")), cex=0.6)
+```
+
+
+There were no outliers detected for the age column
+```{r}
+# Outlier detection for the Area_Incomecolumn
+outlier_values <- boxplot.stats(my_data$Area_Income)$out  # outlier values.
+boxplot(my_data$Area_Income, main="Area_Income", boxwex=0.1)
+mtext(paste("Outliers: ", paste(outlier_values, collapse=", ")), cex=0.6)
+# removing the outliers in the Area_income column
+Q <- quantile(my_data$Area_Income, probs=c(.25, .75), na.rm = FALSE)
+iqr <- IQR(my_data$Area_Income)
+up <-  Q[2]+1.5*iqr # Upper Range  
+low<- Q[1]-1.5*iqr # Lower Range
+eliminated<- subset(my_data, my_data$Area_Income > (Q[1] - 1.5*iqr) & my_data$Area_Income < (Q[2]+1.5*iqr))
+
+eliminated
+```
+There were several outliers detected on the Area _income column and removed
+
+
+```{r}
+# Outlier detection for the Daily_Internet_Usage
+outlier_values <- boxplot.stats(eliminated$Daily_Internet_Usage)$out  # outlier values.
+boxplot(eliminated$Daily_Internet_Usage, main="Daily_Internet_Usage", boxwex=0.1)
+mtext(paste("Outliers: ", paste(outlier_values, collapse=", ")), cex=0.6)
+```
+
+There were no outliers for the daily internet usage
+
+```{r}
+# Cheking the dataset shape after cleaning.
+eliminated
+```
+
+After cleaning the dataset there are 991 rows and 10 columns left.
+
+## 4. Exploratory data Analysis
+
+### Univariate Analysis.
+
+#### a) Daily time spend on site
+
+##### i) Measures of Central Tendency
+```{r}
+# checking for the mean
+mean(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the median
+median(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the mode
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(eliminated$Daily_Time_Spent_on_Site)
+```
+
+##### ii) measures of dispersion
+
+```{r}
+# checking for the variance
+var(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the standard deviation
+sd(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the minimum value
+min(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the maximum value
+max(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the range
+range(eliminated$Daily_Time_Spent_on_Site)
+
+# checking for the quantile
+quantile(eliminated$Daily_Time_Spent_on_Site)
+```
+
+```{r}
+# plotting for the daily time spend on site
+scatter.smooth(eliminated$Daily_Time_Spent_on_Site)
+```
+
+The daily time spend on dite is scattered it does not exhibit a unique character such as clustering at specific times.
+
+
+#### b) Age
+
+##### i) Measures of Central Tendency
+```{r}
+# checking for the mean
+mean(eliminated$Age)
+
+# checking for the median
+median(eliminated$Age)
+
+# checking for the mode
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(eliminated$Age)
+```
+
+##### ii) measures of dispersion
+
+```{r}
+# checking for the variance
+var(eliminated$Age)
+
+# checking for the standard deviation
+sd(eliminated$Age)
+
+# checking for the minimum value
+min(eliminated$Age)
+
+# checking for the maximum value
+max(eliminated$Age)
+
+# checking for the range
+range(eliminated$Age)
+
+# checking for the quantile
+quantile(eliminated$Age)
+```
+
+
+```{r}
+# plotting histogram for the Age column
+hist(eliminated$Age)
+```
+
+The Age of the respondents was mostly between 25 to 45 years
+
+#### c) Area income
+
+##### i) Measures of Central Tendency
+```{r}
+# checking for the mean
+mean(eliminated$Area_Income)
+
+# checking for the median
+median(eliminated$Area_Income)
+
+# checking for the mode
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(eliminated$Area_Income)
+```
+
+##### ii) measures of dispersion
+
+```{r}
+# checking for the variance
+var(eliminated$Area_Income)
+
+# checking for the standard deviation
+sd(eliminated$Area_Income)
+
+# checking for the minimum value
+min(eliminated$Area_Income)
+
+# checking for the maximum value
+max(eliminated$Area_Income)
+
+# checking for the range
+range(eliminated$Area_Income)
+
+# checking for the quantile
+quantile(eliminated$Area_Income)
+```
+
+```{r}
+# plotting for the area income
+library(ggplot2)
+library(ggpubr)
+theme_set(theme_pubr())
+ggplot(eliminated, aes(Area_Income)) +
+  geom_bar(fill = "#0073C2FF") +
+  theme_pubclean()
+
+```
+
+The area income for the respondents is majorly ranging between 80000
+
+#### c) Daily internet usage
+
+##### i) Measures of Central Tendency
+```{r}
+# checking for the mean
+mean(eliminated$Daily_Internet_Usage)
+
+# checking for the median
+median(eliminated$Daily_Internet_Usage)
+
+# checking for the mode
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(eliminated$Daily_Internet_Usage)
+```
+
+
+##### ii) measures of dispersion
+
+```{r}
+# checking for the variance
+var(eliminated$Daily_Internet_Usage)
+
+# checking for the standard deviation
+sd(eliminated$Daily_Internet_Usage)
+
+# checking for the minimum value
+min(eliminated$Daily_Internet_Usage)
+
+# checking for the maximum value
+max(eliminated$Daily_Internet_Usage)
+
+# checking for the range
+range(eliminated$Daily_Internet_Usage)
+
+# checking for the quantile
+quantile(eliminated$Daily_Internet_Usage)
+```
+
+
+```{r}
+# plotting for the Daily_Internet_Usage
+a <- ggplot(eliminated, aes(x = Daily_Internet_Usage))
+a + geom_density(aes(y = ..count..), fill = "lightgray") +
+  geom_vline(aes(xintercept = mean(Daily_Internet_Usage)), 
+             linetype = "dashed", size = 0.6,
+             color = "#FC4E07")
+```
+
+
+Most of the respodents their daily internet usage is above 175 (the mean value)
+
+
+#### d) Gender
+
+##### i) Measures of Central Tendency
+```{r}
+# checking for the mean
+mean(eliminated$Male)
+
+# checking for the median
+median(eliminated$Male)
+
+# checking for the mode
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(eliminated$Male)
+```
+
+##### ii) measures of dispersion
+
+```{r}
+# checking for the variance
+var(eliminated$Male)
+
+# checking for the standard deviation
+sd(eliminated$Male)
+
+# checking for the minimum value
+min(eliminated$Male)
+
+# checking for the maximum value
+max(eliminated$Male)
+
+# checking for the range
+range(eliminated$Male)
+
+# checking for the quantile
+quantile(eliminated$Male)
+```
+
+
+
+```{r}
+# plotting for the gender distribution
+ggplot(eliminated, aes(x = Male)) +
+  geom_bar() + theme_bw() + 
+  labs(y = "Gender count", x = "Gender", title = "Gender distribution")
+```
+
+
+The most respodents were the females represented by 0 as shown in the graph above
+
+
+
+#### e) clicked on add
+
+##### i) Measures of Central Tendency
+```{r}
+# checking for the mean
+mean(eliminated$Clicked_on_Ad)
+
+# checking for the median
+median(eliminated$Clicked_on_Ad)
+
+# checking for the mode
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(eliminated$Clicked_on_Ad)
+```
+
+
+##### ii) measures of dispersion
+
+```{r}
+# checking for the variance
+var(eliminated$Clicked_on_Ad)
+
+# checking for the standard deviation
+sd(eliminated$Clicked_on_Ad)
+
+# checking for the minimum value
+min(eliminated$Clicked_on_Ad)
+
+# checking for the maximum value
+max(eliminated$Clicked_on_Ad)
+
+# checking for the range
+range(eliminated$Clicked_on_Ad)
+
+# checking for the quantile
+quantile(eliminated$Clicked_on_Ad)
+```
+
+
+```{r}
+# create a pie chart with slice labels
+plotdata <- eliminated %>%
+  count(Clicked_on_Ad) %>%
+  arrange(desc(Clicked_on_Ad)) %>%
+  mutate(prop = round(n*100/sum(n), 1),
+         lab.ypos = cumsum(prop) - 0.5*prop)
+
+plotdata$label <- paste0(plotdata$Clicked_on_Ad, "\n",
+                         round(plotdata$prop), "%")
+
+ggplot(plotdata, 
+       aes(x = "", 
+           y = prop, 
+           fill = Clicked_on_Ad)) +
+  geom_bar(width = 1, 
+           stat = "identity", 
+           color = "black") +
+  geom_text(aes(y = lab.ypos, label = label), 
+            color = "black") +
+  coord_polar("y", 
+              start = 0, 
+              direction = -1) +
+  theme_void() +
+  theme(legend.position = "FALSE") +
+  labs(title = "Participants clicking the ad")
+```
+
+
+The distristribution of the participants clicking the ad is 50% to 50%
+
+
+#### f) Country
+
+```{r}
+# Compute the frequency
+library(dplyr)
+df <- eliminated %>%
+  group_by(Country) %>%
+  summarise(counts = n())
+df
+```
+
+
+
+### Bivariate Analysis.
+
+#### Overal correlation matrix
+
+```{r}
+x = subset(eliminated, select = -c(Ad_Topic_Line, City, Country, Timestamp))
+x
+cor(x, method = "pearson", use = "complete.obs")
+```
+
+#### a) Daily time spend on the site and the age
+
+##### i) Covariance
+
+```{r}
+d <- eliminated$Daily_Time_Spent_on_Site
+e <- eliminated$Age
+cov(d, e)
+```
+
+The covariance of dailytie spend on site is about -46.59899. It indicates a nwgative linear relationship between the two variables. That is, as one increases the one decreases. for example if age increase the daily spent time on side reduces
+
+##### ii) correlation
+```{r}
+cor(d, e)
+```
+
+The correlation coefficient of daily spent time and age is -0.3328515.we can conclude that the variables are negatively  linearly related.
+
+
+##### iii) plot of age and daily time spent on site
+```{r}
+plot(d, e)
+```
+
+
+#### b) Age and rate of clicking the ad
+
+##### i) covariance
+```{r}
+cov(eliminated$Age, eliminated$Clicked_on_Ad)
+```
+ 
+The covariance of age and clicking the ad is about 2.172663. It indicates a positive linear relationship between the two variables. Thus if one increases the other also increases. For example, if the age increases the probability id high that the respodent will click the ad
+
+##### ii) correlation
+```{r}
+cor(eliminated$Age, eliminated$Clicked_on_Ad)
+```
+
+we can conclude that the variables are positively linearly related.
+
+##### iii) plot
+
+```{r}
+ggplot(eliminated, aes(x = Age, fill = Clicked_on_Ad)) +
+  facet_wrap(~ Clicked_on_Ad) +
+  theme_bw() +
+  geom_bar() +
+  labs(y = "clicking ad count", title = "Age and rate of clicking the ad")
+```
+
+As we can observe the ad was mostly clicked by the order people unlike the young people
+
+#### c) Gender that mostly clicked 
+
+##### i) covariance
+```{r}
+cov(eliminated$Male, eliminated$Clicked_on_Ad)
+```
+
+
+There is a negative relationship between the gender and the rate of clicking the ad
+
+
+##### ii) correlation
+```{r}
+cor(eliminated$Male, eliminated$Clicked_on_Ad)
+```
+
+There is a weak negative reltionship between the two
+
+##### iii) plot
+```{r}
+ggplot(eliminated, aes(x = Male, fill = Clicked_on_Ad)) +
+  theme_bw() + geom_bar() + 
+  labs(y = "Clicking the ad count", x = 'gender', title = "Gender")
+```
+
+
+Most females clicked the ad compared to males
+
+
+## 5. Modelling
+
+```{r}
+# dropping irrelevant columns
+eliminated_1 <- subset(eliminated, select = -c(Timestamp, Country, City, Ad_Topic_Line) )
+eliminated_1
+```
+
+
+
+Since the project is a classification problem, I will use decition trees and Naive bayes supervised learning algorithims
+
+### a) Decision trees
+
+```{r}
+# First we’ll break the data into training & test sets
+n <- nrow(eliminated_1)
+n_train <- round(0.8 * n) 
+
+set.seed(123)
+train_indices <- sample(1:n, n_train)
+train_1 <- eliminated_1[train_indices, ]  
+test_1 <- eliminated_1[-train_indices, ]
+```
+```{r}
+# fitting the model
+library(rpart)
+model <- rpart(formula = Clicked_on_Ad ~ Daily_Time_Spent_on_Site + Age + Area_Income + Daily_Internet_Usage + Male,
+            data = train_1, 
+            method = "class")
+
+```
+
+
+```{r}
+# plotting the model tree
+library(rpart.plot)
+rpart.plot(model)
+```
+
+
+
+```{r}
+# Performance Evaluation
+test_1$pred <- predict(object = model,  
+                            newdata = test_1,   
+                            type = "class")
+```
+```{r}
+library(caret)
+confusionMatrix(data = test_1$pred,
+                reference = test_1$pred)
+```
+
+
+The model has an accuracy of 95%
+
+
+
+### b) Naive Bayes
+
+```{r}
+#create objects x which holds the predictor variables and y which holds the response variables
+X = train_1[,-6]
+y = train_1$Clicked_on_Ad
+
+X
+```
+
+```{r}
+#loading the e1071 package that holds the Naive Bayes function
+library(e1071)
+
+#Fitting the Naive Bayes model
+Naive_Bayes_Model=naiveBayes(Clicked_on_Ad ~., data=eliminated_1)
+#What does the model say? Print the model summary
+Naive_Bayes_Model
+
+```
+```{r}
+#Model Evaluation
+#Predict testing set
+Predict <- predict(Naive_Bayes_Model,newdata = eliminated_1 )
+predict
+
+```
+
+
+
+
+
+## Recommendations
+
+The entrepreneur should invest in advertising on a target group group. This is because from the analysis we have observed that the younger generation takes more time compare to the middle aged individuls but their rate of clicking the app is minial. Thus, she should target the middle aged people.
+    I have also observed that the most gender that clicked the ad are the females who happen to spend more time on the ad compared to males.
+
