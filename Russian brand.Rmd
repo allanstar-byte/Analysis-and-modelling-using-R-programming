@@ -1,0 +1,307 @@
+---
+title: "Russian brand"
+author: "allan mutisya"
+date: "1/16/2021"
+output: html_document
+---
+
+```{r}
+#  locale workaround
+my_locale <- Sys.getlocale("LC_ALL")
+Sys.setlocale("LC_ALL", my_locale)
+```
+
+# Russian Brand
+
+## 1. Defining the question
+
+### a) Specifying the Question
+The brand’s Sales and Marketing team would like to understand their customer’s behavior from data that they have collected over the past year. More specifically, they would like to learn the characteristics of customer groups.
+
+### b) Defining the Metric for Success
+
+The analysis will be considered a success when interactive visulizations that tell a good story are achieved. An all-round Exploratory data analysis and a powerful model when is achieved the project  will be considered a success.
+
+### c) Understanding the context
+
+The role of the analysis is to come up with recomendations which the sales and marketing team will use to executed in order to identify the fertile areas to first invest on during decision making
+
+### d) Recording the Experimental Design
+
+1. Defining the research question
+
+2. Data Understanding
+
+3. Data cleaning
+
+4. Exploratory Data Analysis
+
+5. Modelling
+
+6. Evaluation
+
+7. Conclusion
+
+8. Recommendations
+
+### e) Data Relevance
+
+The datasets are large enough to be used for Exploratory Data Analysis, thus promising better outcomes.
+
+### f) Reading the Data
+```{r}
+# loading the readr library to enable loading the csv dataset
+library(readr)
+
+# loading the dataset
+brand <- read_csv("C:/Users/ALLANOOH/Documents/moringa/Russian brand/online_shoppers_intention.csv")
+head(brand)
+```
+
+
+## 2. Data Understanding
+
+```{r}
+#checking the columns
+ls(brand)
+```
+
+
+```{r}
+# checking the structure of the dataset
+str(brand)
+```
+
+
+The dataset is comprised of:
+
+a) numeric, character and logical datatypes.
+
+b) 12330 obs. of  18 variables as the dataset shape
+
+
+```{r}
+# checking for unique values for the type of visitor variable
+
+unique(brand$VisitorType)
+```
+
+## 3. Data cleaning
+
+```{r}
+
+library(caret)
+dmy <- dummyVars(" ~ .", data = brand, fullRank = T)
+brand_1 <- data.frame(predict(dmy, newdata = brand))
+```
+
+
+```{r}
+# checking for the null values
+
+sum(is.na(brand))
+```
+
+
+```{r}
+# dropping the duplicated values
+brand_3 <- na.omit(brand)
+
+# checking if the null values have been removed
+sum(is.na(brand_3))
+```
+
+```{r}
+# checking for the duplicated values
+sum(duplicated(brand_3))
+```
+
+We will retain the duplicated valus since there is no strong background to drop them.
+
+
+```{r}
+# picking the cartegorical variables
+df <- subset(brand, select = -c(Month, VisitorType, Revenue, Weekend) )
+df
+
+# checking for the outliers
+OutVals = boxplot(df)$out
+```
+
+
+
+The outliers will be retained.
+
+## 4. Exploratory data Analysis
+
+
+```{r}
+# getting the descriptive statistics of the dataset for each variable
+summary(brand_3)
+```
+
+
+
+#### a) Administrative_Duration
+
+```{r}
+# plotting for the daily time spend on site
+scatter.smooth(df$Administrative_Duration)
+```
+
+
+The daily time spend on dite is scattered it does not exhibit a unique character such as clustering at specific times.
+
+
+#### b) Informational_Duration
+
+```{r}
+# plotting for the  Informational_Duration
+a <- ggplot(df, aes(x = Informational_Duration))
+a + geom_density(aes(y = ..count..), fill = "lightgray") +
+  geom_vline(aes(xintercept = mean(Informational_Duration)), 
+             linetype = "dashed", size = 0.6,
+             color = "#FC4E07")
+```
+
+
+The distribution is along 0 to 1
+
+
+#### c) Revenue 
+
+```{r}
+# plotting for the Revenue distribution
+ggplot(brand, aes(x = Revenue)) +
+  geom_bar() + theme_bw() + 
+  labs(y = "Revenue count", x = "Revenue", title = "Revenue distribution")
+```
+
+
+Most distribution is on the False.
+
+### d) revenue in relation to admin duration
+
+```{r}
+ggplot(brand_1, aes(x = RevenueTRUE, fill = Administrative_Duration)) +
+  theme_bw() + geom_bar() + 
+  labs(y = "administrative_duration", title = " Revenue to admin duration")
+
+
+```
+
+Where the admin duration was high the revenue was False and vice versa. This indicates that the admin duration and the revenue are negatively correlated
+
+
+
+
+## 5. Modelling
+
+### K-means clustering
+
+```{r}
+# Preprocessing the dataset
+data <- na.omit(brand_1)
+x <- subset(data, select = -c(RevenueTRUE) )
+y <- data[, "RevenueTRUE"]
+head(x)
+```
+
+```{r}
+# Previewing the class column
+# ---
+# 
+head(y)
+
+
+```
+
+
+
+```{r}
+## Applying the K-means clustering algorithm with no. of centroids(k)=3
+
+model <- kmeans(x,3) 
+
+# Previewing the no. of records in each cluster
+# 
+model$size 
+
+
+```
+
+
+
+```{r}
+# Getting the value of cluster center datapoint value(3 centers for k=3)
+# ---
+# 
+model$centers 
+
+```
+
+
+
+```{r}
+# Visualizing the  clustering results
+# ---
+# 
+par(mfrow = c(1,2), mar = c(5,4,2,2))
+
+# Plotting to see how administrative and administrative_duration.R data points have been distributed in clusters
+# ---
+#
+plot(brand_1[,1:2], col = model$cluster) 
+```
+
+
+ 
+```{r}
+library(class)
+table(model$cluster, y)
+```
+
+
+### hierarchical cluster analysis
+
+```{r}
+# we start by scaling the data using the R function scale() as follows
+df <- scale(data)
+head(df)
+```
+
+
+
+```{r}
+# We now use the R function hclust() for hierarchical clustering
+
+# First we use the dist() function to compute the Euclidean distance between observations, 
+# d will be the first argument in the hclust() function dissimilarity matrix
+
+
+d <- dist(df, method = "euclidean")
+
+# We then hierarchical clustering using the Ward's method
+# ---
+# 
+res.hc <- hclust(d, method = "ward.D2" )
+```
+
+```{r}
+# Lastly, we plot the obtained dendrogram
+# ---
+# 
+plot(res.hc, cex = 0.9, hang = -4)
+```
+
+
+
+## Conclusion
+
+I would prefer KNN clustering to hierarchical clustering since Methods used are normally less computationally intensive and are suited with very large dataset while hierarchical clustering requires the computation and storage of an n×n  distance matrix. For very large datasets, this can be expensive and slow
+
+
+## Recommendations
+
+I recomend the sales and the marketting team to use the KNN clustering for their predictive purposes since it has a better perforance of 95% compared to hierarchical clustering 
+
